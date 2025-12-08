@@ -1,9 +1,0 @@
-MODEL 2: With Firm Controls
-ROA ~ AFFECTED_RATIO + LOG_ASSETS + LEVERAGE
-================================================================================
-
-N: 2080
-R-squared: 0.038
-Adj. R-squared: 0.037
-F-statistic: 27.65
-Prob (F-statistic): 1.57e-17

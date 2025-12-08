@@ -1,9 +1,0 @@
-MODEL 3: With Year Fixed Effects
-ROA ~ AFFECTED_RATIO + LOG_ASSETS + LEVERAGE + YEAR_DUMMIES
-================================================================================
-
-N: 2080
-R-squared: 0.05
-Adj. R-squared: 0.045
-F-statistic: 10.88
-Prob (F-statistic): 3.07e-18
