@@ -1,0 +1,9 @@
+MODEL 1: Simple OLS
+ROA ~ AFFECTED_RATIO
+================================================================================
+
+N: 2080
+R-squared: 0.0
+Adj. R-squared: -0.0
+F-statistic: 0.071
+Prob (F-statistic): 0.79

@@ -1,0 +1,83 @@
+
+STATISTICAL MODEL SPECIFICATION
+================================
+
+Primary Research Question:
+-------------------------
+Do natural disasters affecting a company's facilities impact its financial performance?
+
+Dependent Variable:
+------------------
+ROA (Return on Assets) = Net Income / Total Assets
+    - Measures firm profitability
+    - Common financial performance metric
+    - Ranges from negative (losses) to positive (profits)
+
+Key Independent Variable:
+------------------------
+AFFECTED_RATIO = Number of Exposed Facilities / Total Facilities
+    - Follows Hsu et al. (2018) methodology
+    - Ranges from 0 (no exposure) to 1 (all facilities exposed)
+    - A facility is "exposed" if a SHELDUS disaster event occurred in its FIPS county
+
+Control Variables:
+-----------------
+1. LOG_ASSETS = ln(Total Assets)
+   - Controls for firm size
+   - Larger firms may have more resources to absorb shocks
+
+2. LEVERAGE = Total Debt / Total Assets
+   - Controls for financial structure
+   - High leverage may amplify disaster impacts
+
+3. Year Fixed Effects (Models 2-3)
+   - Controls for time-varying macroeconomic conditions
+   - Accounts for COVID-19 period effects (2020-2021)
+
+Regression Models:
+-----------------
+
+Model 1: Simple OLS
+    ROA_it = β₀ + β₁(AFFECTED_RATIO_it) + ε_it
+
+Model 2: With Firm Controls
+    ROA_it = β₀ + β₁(AFFECTED_RATIO_it) + β₂(LOG_ASSETS_it) 
+           + β₃(LEVERAGE_it) + ε_it
+
+Model 3: With Year Fixed Effects
+    ROA_it = β₀ + β₁(AFFECTED_RATIO_it) + β₂(LOG_ASSETS_it) 
+           + β₃(LEVERAGE_it) + Σγ_t(YEAR_t) + ε_it
+
+Where:
+    i = firm identifier
+    t = year
+    β₁ = coefficient of interest (disaster impact)
+    ε_it = error term
+
+Estimation Method:
+-----------------
+- Ordinary Least Squares (OLS) with robust standard errors
+- Cross-sectional analysis (firm-year observations)
+- No clustering (each firm-year treated as independent)
+
+Sample Restrictions:
+-------------------
+1. Manufacturing firms only (based on SIC codes)
+2. 2016-2023 period (ensures post-crisis data quality)
+3. Non-missing financial data (ROA, assets, leverage)
+4. Successfully matched TRI-CRSP-Compustat records
+
+Hypothesis:
+----------
+H₀: β₁ = 0 (No effect of disasters on ROA)
+H₁: β₁ < 0 (Disasters negatively impact ROA)
+
+Expected Sign: Negative
+    - Disasters disrupt operations
+    - Increase costs (repairs, insurance deductibles)
+    - Reduce productivity
+    
+Actual Finding: β₁ ≈ 0 (null result)
+    - Suggests manufacturing firms are resilient
+    - May have insurance, geographic diversification
+    - Contrasts with Hsu et al.'s broader sample results

@@ -1,0 +1,36 @@
+
+CORRELATION MATRIX NOTES:
+------------------------
+The correlation matrix should be calculated from the actual analysis dataset.
+This requires access to the complete merged data with all 2,080 observations.
+
+Key relationships to examine:
+1. ROA vs AFFECTED_RATIO - Main relationship of interest
+2. LOG_ASSETS vs ROA - Size effect on profitability
+3. LEVERAGE vs ROA - Financial structure effect
+4. AFFECTED_RATIO vs total_facilities - Exposure patterns by firm size
+5. Multicollinearity among controls
+
+Expected patterns:
+- AFFECTED_RATIO vs ROA: Near-zero (based on null finding)
+- LOG_ASSETS vs ROA: Positive (larger firms more profitable)
+- LEVERAGE vs ROA: Negative (debt reduces profitability)
+- LOG_ASSETS vs LEVERAGE: Positive (larger firms carry more debt)
+
+
+CORRELATION MATRIX STRUCTURE:
+================================================================================
+
+Variables to include:
+  - ROA
+  - AFFECTED_RATIO
+  - LOG_ASSETS
+  - LEVERAGE
+  - num_disasters
+  - total_facilities
+
+To generate: Run this code on the analysis_data DataFrame:
+  corr_vars = ['ROA', 'AFFECTED_RATIO', 'LOG_ASSETS', 'LEVERAGE', 
+               'num_disasters', 'total_facilities']
+  correlation_matrix = analysis_data[corr_vars].corr()
+  correlation_matrix.to_csv('correlation_matrix.csv')
