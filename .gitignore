@@ -1,2 +1,12 @@
 *.backup
 *.bak
+
+# Statistical output directories (generated files)
+statistical_analysis_outputs/
+FINAL_OUTPUTS/
+statistical_outputs_for_professor/
+
+# Keep only the consolidated output files
+!statistical_analysis_outputs/COMPLETE_DATA.xlsx
+!statistical_analysis_outputs/COMPLETE_RESULTS.xlsx
+!statistical_analysis_outputs/README.txt
