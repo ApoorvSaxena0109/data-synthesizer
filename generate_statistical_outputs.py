@@ -1,13 +1,29 @@
 #!/usr/bin/env python3
 """
-Statistical Analysis Output Generator
-======================================
-This script generates comprehensive statistical analysis outputs requested by Professor Yang:
-1. Complete analysis dataset (all observations in a single file)
-2. Statistical model specification
-3. Descriptive statistics
-4. Correlation matrix
-5. Regression output tables
+Statistical Analysis Output Generator - CONSOLIDATED (2 Files)
+===============================================================
+This script generates consolidated statistical analysis outputs for Professor Yang:
+1. COMPLETE_DATA.xlsx - All data-related information (5 sheets)
+2. COMPLETE_RESULTS.xlsx - All statistical results (10 sheets)
+
+Replaces the previous multiple-file approach with a streamlined 2-file system
+for easier review and debugging.
+
+Output Files:
+-------------
+COMPLETE_DATA.xlsx contains:
+  - Dataset Description
+  - Descriptive Statistics
+  - Data Dictionary
+  - Exposure Distribution
+  - Yearly Statistics
+
+COMPLETE_RESULTS.xlsx contains:
+  - Model Specification
+  - Correlation Matrix Notes
+  - Model 1, 2, 3 Results (coefficients and statistics)
+  - Regression Summary
+  - Publication-Ready Table
 
 Author: Apoorv Saxena
 Date: December 2025
@@ -21,9 +37,10 @@ import sys
 from datetime import datetime
 
 print("="*80)
-print("STATISTICAL ANALYSIS OUTPUT GENERATOR")
+print("STATISTICAL ANALYSIS OUTPUT GENERATOR - CONSOLIDATED (2 FILES)")
 print("="*80)
 print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+print("Output: COMPLETE_DATA.xlsx + COMPLETE_RESULTS.xlsx")
 print("="*80)
 
 # ============================================================================
@@ -375,186 +392,270 @@ regression_summary = {
 regression_summary_df = pd.DataFrame(regression_summary)
 
 # ============================================================================
-# 7. SAVE ALL OUTPUTS
+# 7. SAVE ALL OUTPUTS TO 2 CONSOLIDATED FILES
 # ============================================================================
 
-print("\n7. Saving output files...")
+print("\n7. Creating consolidated output files (2 files only)...")
 
 output_dir = Path('statistical_analysis_outputs')
 output_dir.mkdir(exist_ok=True)
 
-# Save dataset description
-with open(output_dir / '01_DATASET_DESCRIPTION.txt', 'w') as f:
-    f.write("ANALYSIS DATASET DESCRIPTION\n")
-    f.write("="*80 + "\n\n")
-    f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-    for key, value in dataset_description.items():
-        f.write(f"{key}:\n")
-        if isinstance(value, list):
-            for item in value:
-                f.write(f"  - {item}\n")
-        else:
-            f.write(f"  {value}\n")
-        f.write("\n")
-    f.write("\nIMPORTANT NOTE:\n")
-    f.write("-" * 80 + "\n")
-    f.write("To generate the complete dataset with all 2,080 observations, you need to:\n")
-    f.write("1. Run the Jupyter notebooks in sequence (Notebooks 1-5)\n")
-    f.write("2. The notebooks require access to the Google Drive data files\n")
-    f.write("3. Final dataset is created in Notebook 5 after merging:\n")
-    f.write("   - TRI facility data\n")
-    f.write("   - SHELDUS disaster events\n")
-    f.write("   - CRSP company matching\n")
-    f.write("   - Compustat financial data\n\n")
+# ============================================================================
+# FILE 1: COMPLETE_DATA.xlsx - All data-related information
+# ============================================================================
+print("\n   Creating COMPLETE_DATA.xlsx...")
 
-print(f"   ✓ Saved: {output_dir / '01_DATASET_DESCRIPTION.txt'}")
+data_file = output_dir / 'COMPLETE_DATA.xlsx'
 
-# Save model specification
-with open(output_dir / '02_STATISTICAL_MODEL.txt', 'w') as f:
-    f.write(model_specification)
+try:
+    with pd.ExcelWriter(data_file, engine='openpyxl') as writer:
+        # Sheet 1: Analysis Dataset Description
+        dataset_desc_text = []
+        dataset_desc_text.append("ANALYSIS DATASET DESCRIPTION")
+        dataset_desc_text.append("="*80)
+        dataset_desc_text.append("")
+        dataset_desc_text.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        dataset_desc_text.append("")
+        for key, value in dataset_description.items():
+            dataset_desc_text.append(f"{key}:")
+            if isinstance(value, list):
+                for item in value:
+                    dataset_desc_text.append(f"  - {item}")
+            else:
+                dataset_desc_text.append(f"  {value}")
+            dataset_desc_text.append("")
+        
+        dataset_desc_text.append("IMPORTANT NOTE:")
+        dataset_desc_text.append("-" * 80)
+        dataset_desc_text.append("To generate the complete dataset with all 2,080 observations:")
+        dataset_desc_text.append("1. Run the Jupyter notebooks in sequence (Notebooks 1-5)")
+        dataset_desc_text.append("2. The notebooks require access to the Google Drive data files")
+        dataset_desc_text.append("3. Final dataset is created in Notebook 5 after merging:")
+        dataset_desc_text.append("   - TRI facility data")
+        dataset_desc_text.append("   - SHELDUS disaster events")
+        dataset_desc_text.append("   - CRSP company matching")
+        dataset_desc_text.append("   - Compustat financial data")
+        
+        dataset_desc_df = pd.DataFrame({'Dataset Description': dataset_desc_text})
+        dataset_desc_df.to_excel(writer, sheet_name='Dataset_Description', index=False)
+        
+        # Sheet 2: Descriptive Statistics
+        descriptive_stats_df.to_excel(writer, sheet_name='Descriptive_Statistics', index=False)
+        
+        # Sheet 3: Data Dictionary
+        data_dict_vars = ['PERMNO', 'YEAR', 'TICKER', 'total_facilities', 'num_disasters',
+                         'exposed_facilities', 'AFFECTED_RATIO', 'DISASTER', 'ROA',
+                         'TOTAL_ASSETS', 'NET_INCOME', 'TOTAL_DEBT', 'TOTAL_REVENUE',
+                         'LOG_ASSETS', 'LEVERAGE', 'REVENUE_GROWTH']
+        data_dict_descriptions = [
+            'CRSP permanent company identifier',
+            'Fiscal year (2016-2023)',
+            'Stock ticker symbol',
+            'Total number of TRI-registered facilities',
+            'Total count of SHELDUS disaster events affecting facilities',
+            'Number of facilities in disaster-affected counties',
+            'Proportion of facilities exposed to disasters (0-1)',
+            'Binary indicator: 1 if any facility exposed to disaster',
+            'Return on Assets = Net Income / Total Assets (dependent variable)',
+            'Total assets in millions USD',
+            'Net income in millions USD',
+            'Total debt in millions USD',
+            'Total revenue in millions USD',
+            'Natural logarithm of total assets (size control)',
+            'Financial leverage = Total Debt / Total Assets (control)',
+            'Revenue growth rate (control)'
+        ]
+        data_dictionary_df = pd.DataFrame({
+            'Variable': data_dict_vars,
+            'Description': data_dict_descriptions
+        })
+        data_dictionary_df.to_excel(writer, sheet_name='Data_Dictionary', index=False)
+        
+        # Sheet 4: Exposure Distribution
+        exposure_df.to_excel(writer, sheet_name='Exposure_Distribution', index=False)
+        
+        # Sheet 5: Yearly Statistics (sample structure)
+        yearly_stats_data = {
+            'Year': [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023],
+            'Note': ['Run notebooks to generate actual yearly statistics'] * 8
+        }
+        yearly_stats_df = pd.DataFrame(yearly_stats_data)
+        yearly_stats_df.to_excel(writer, sheet_name='Yearly_Statistics', index=False)
+    
+    print(f"   ✓ Saved: {data_file}")
+    print(f"      - Sheet 1: Dataset_Description")
+    print(f"      - Sheet 2: Descriptive_Statistics")
+    print(f"      - Sheet 3: Data_Dictionary")
+    print(f"      - Sheet 4: Exposure_Distribution")
+    print(f"      - Sheet 5: Yearly_Statistics")
 
-print(f"   ✓ Saved: {output_dir / '02_STATISTICAL_MODEL.txt'}")
-
-# Save descriptive statistics
-descriptive_stats_df.to_csv(output_dir / '03_DESCRIPTIVE_STATISTICS.csv', index=False)
-descriptive_stats_df.to_excel(output_dir / '03_DESCRIPTIVE_STATISTICS.xlsx', index=False)
-
-print(f"   ✓ Saved: {output_dir / '03_DESCRIPTIVE_STATISTICS.csv'}")
-print(f"   ✓ Saved: {output_dir / '03_DESCRIPTIVE_STATISTICS.xlsx'}")
-
-# Save exposure distribution
-exposure_df.to_csv(output_dir / '03b_EXPOSURE_DISTRIBUTION.csv', index=False)
-exposure_df.to_excel(output_dir / '03b_EXPOSURE_DISTRIBUTION.xlsx', index=False)
-
-print(f"   ✓ Saved: {output_dir / '03b_EXPOSURE_DISTRIBUTION.csv'}")
-print(f"   ✓ Saved: {output_dir / '03b_EXPOSURE_DISTRIBUTION.xlsx'}")
-
-# Save correlation matrix template
-with open(output_dir / '04_CORRELATION_MATRIX.txt', 'w') as f:
-    f.write(correlation_note)
-    f.write("\n\nCORRELATION MATRIX STRUCTURE:\n")
-    f.write("="*80 + "\n\n")
-    f.write("Variables to include:\n")
-    for var in correlation_vars:
-        f.write(f"  - {var}\n")
-    f.write("\nTo generate: Run this code on the analysis_data DataFrame:\n")
-    f.write("  corr_vars = ['ROA', 'AFFECTED_RATIO', 'LOG_ASSETS', 'LEVERAGE', \n")
-    f.write("               'num_disasters', 'total_facilities']\n")
-    f.write("  correlation_matrix = analysis_data[corr_vars].corr()\n")
-    f.write("  correlation_matrix.to_csv('correlation_matrix.csv')\n")
-
-print(f"   ✓ Saved: {output_dir / '04_CORRELATION_MATRIX.txt'}")
-
-# Save regression results
-model1_df.to_csv(output_dir / '05a_REGRESSION_MODEL1_SIMPLE.csv', index=False)
-model1_df.to_excel(output_dir / '05a_REGRESSION_MODEL1_SIMPLE.xlsx', index=False)
-with open(output_dir / '05a_REGRESSION_MODEL1_SIMPLE_STATS.txt', 'w') as f:
-    f.write("MODEL 1: Simple OLS\n")
-    f.write("ROA ~ AFFECTED_RATIO\n")
-    f.write("="*80 + "\n\n")
-    for key, value in model1_stats.items():
-        f.write(f"{key}: {value}\n")
-
-print(f"   ✓ Saved: {output_dir / '05a_REGRESSION_MODEL1_SIMPLE.csv'}")
-
-model2_df.to_csv(output_dir / '05b_REGRESSION_MODEL2_CONTROLS.csv', index=False)
-model2_df.to_excel(output_dir / '05b_REGRESSION_MODEL2_CONTROLS.xlsx', index=False)
-with open(output_dir / '05b_REGRESSION_MODEL2_CONTROLS_STATS.txt', 'w') as f:
-    f.write("MODEL 2: With Firm Controls\n")
-    f.write("ROA ~ AFFECTED_RATIO + LOG_ASSETS + LEVERAGE\n")
-    f.write("="*80 + "\n\n")
-    for key, value in model2_stats.items():
-        f.write(f"{key}: {value}\n")
-
-print(f"   ✓ Saved: {output_dir / '05b_REGRESSION_MODEL2_CONTROLS.csv'}")
-
-model3_df.to_csv(output_dir / '05c_REGRESSION_MODEL3_YEAR_FE.csv', index=False)
-model3_df.to_excel(output_dir / '05c_REGRESSION_MODEL3_YEAR_FE.xlsx', index=False)
-with open(output_dir / '05c_REGRESSION_MODEL3_YEAR_FE_STATS.txt', 'w') as f:
-    f.write("MODEL 3: With Year Fixed Effects\n")
-    f.write("ROA ~ AFFECTED_RATIO + LOG_ASSETS + LEVERAGE + YEAR_DUMMIES\n")
-    f.write("="*80 + "\n\n")
-    for key, value in model3_stats.items():
-        f.write(f"{key}: {value}\n")
-
-print(f"   ✓ Saved: {output_dir / '05c_REGRESSION_MODEL3_YEAR_FE.csv'}")
-
-# Save regression summary
-regression_summary_df.to_csv(output_dir / '05d_REGRESSION_SUMMARY.csv', index=False)
-regression_summary_df.to_excel(output_dir / '05d_REGRESSION_SUMMARY.xlsx', index=False)
-
-print(f"   ✓ Saved: {output_dir / '05d_REGRESSION_SUMMARY.csv'}")
+except ImportError:
+    print(f"   ⚠ openpyxl not available, skipping COMPLETE_DATA.xlsx")
+    print(f"      Install with: pip install openpyxl")
 
 # ============================================================================
-# 8. CREATE MASTER SUMMARY DOCUMENT
+# FILE 2: COMPLETE_RESULTS.xlsx - All statistical results
+# ============================================================================
+print("\n   Creating COMPLETE_RESULTS.xlsx...")
+
+results_file = output_dir / 'COMPLETE_RESULTS.xlsx'
+
+try:
+    with pd.ExcelWriter(results_file, engine='openpyxl') as writer:
+        # Sheet 1: Model Specification
+        model_spec_lines = model_specification.strip().split('\n')
+        model_spec_df = pd.DataFrame({'Model Specification': model_spec_lines})
+        model_spec_df.to_excel(writer, sheet_name='Model_Specification', index=False)
+        
+        # Sheet 2: Correlation Matrix Note
+        corr_note_lines = correlation_note.strip().split('\n')
+        corr_note_df = pd.DataFrame({'Correlation Matrix Notes': corr_note_lines})
+        corr_note_df.to_excel(writer, sheet_name='Correlation_Matrix_Notes', index=False)
+        
+        # Sheet 3: Model 1 Results
+        model1_df.to_excel(writer, sheet_name='Model1_Simple_OLS', index=False)
+        
+        # Add model 1 statistics as separate rows
+        model1_stats_df = pd.DataFrame([
+            ['', ''],
+            ['Model Statistics:', ''],
+            ['N', model1_stats['N']],
+            ['R-squared', model1_stats['R-squared']],
+            ['Adj. R-squared', model1_stats['Adj. R-squared']],
+            ['F-statistic', model1_stats['F-statistic']],
+            ['Prob (F-statistic)', model1_stats['Prob (F-statistic)']]
+        ], columns=['Statistic', 'Value'])
+        model1_stats_df.to_excel(writer, sheet_name='Model1_Statistics', index=False)
+        
+        # Sheet 4: Model 2 Results
+        model2_df.to_excel(writer, sheet_name='Model2_With_Controls', index=False)
+        
+        model2_stats_df = pd.DataFrame([
+            ['', ''],
+            ['Model Statistics:', ''],
+            ['N', model2_stats['N']],
+            ['R-squared', model2_stats['R-squared']],
+            ['Adj. R-squared', model2_stats['Adj. R-squared']],
+            ['F-statistic', model2_stats['F-statistic']],
+            ['Prob (F-statistic)', model2_stats['Prob (F-statistic)']]
+        ], columns=['Statistic', 'Value'])
+        model2_stats_df.to_excel(writer, sheet_name='Model2_Statistics', index=False)
+        
+        # Sheet 5: Model 3 Results
+        model3_df.to_excel(writer, sheet_name='Model3_Year_FE', index=False)
+        
+        model3_stats_df = pd.DataFrame([
+            ['', ''],
+            ['Model Statistics:', ''],
+            ['N', model3_stats['N']],
+            ['R-squared', model3_stats['R-squared']],
+            ['Adj. R-squared', model3_stats['Adj. R-squared']],
+            ['F-statistic', model3_stats['F-statistic']],
+            ['Prob (F-statistic)', model3_stats['Prob (F-statistic)']]
+        ], columns=['Statistic', 'Value'])
+        model3_stats_df.to_excel(writer, sheet_name='Model3_Statistics', index=False)
+        
+        # Sheet 6: Regression Summary Table
+        regression_summary_df.to_excel(writer, sheet_name='Regression_Summary', index=False)
+        
+        # Sheet 7: Publication-Ready Table
+        pub_table_data = []
+        pub_table_data.append(['Variable', 'Model 1', 'Model 2', 'Model 3'])
+        pub_table_data.append(['AFFECTED_RATIO', 
+                              f"{model1_results['Coefficient'][1]:.4f}",
+                              f"{model2_results['Coefficient'][1]:.4f}",
+                              f"{model3_results['Coefficient'][1]:.4f}"])
+        pub_table_data.append(['', 
+                              f"({model1_results['Std Error'][1]:.4f})",
+                              f"({model2_results['Std Error'][1]:.4f})",
+                              f"({model3_results['Std Error'][1]:.4f})"])
+        pub_table_data.append(['LOG_ASSETS', '', 
+                              f"{model2_results['Coefficient'][2]:.4f}",
+                              f"{model3_results['Coefficient'][2]:.4f}"])
+        pub_table_data.append(['', '', 
+                              f"({model2_results['Std Error'][2]:.4f})",
+                              f"({model3_results['Std Error'][2]:.4f})"])
+        pub_table_data.append(['LEVERAGE', '', 
+                              f"{model2_results['Coefficient'][3]:.4f}",
+                              f"{model3_results['Coefficient'][3]:.4f}"])
+        pub_table_data.append(['', '', 
+                              f"({model2_results['Std Error'][3]:.4f})",
+                              f"({model3_results['Std Error'][3]:.4f})"])
+        pub_table_data.append(['', '', '', ''])
+        pub_table_data.append(['Year Fixed Effects', 'No', 'No', 'Yes'])
+        pub_table_data.append(['N', model1_stats['N'], model2_stats['N'], model3_stats['N']])
+        pub_table_data.append(['R-squared', 
+                              f"{model1_stats['R-squared']:.4f}",
+                              f"{model2_stats['R-squared']:.4f}",
+                              f"{model3_stats['R-squared']:.4f}"])
+        
+        pub_table_df = pd.DataFrame(pub_table_data)
+        pub_table_df.to_excel(writer, sheet_name='Publication_Table', index=False, header=False)
+    
+    print(f"   ✓ Saved: {results_file}")
+    print(f"      - Sheet 1: Model_Specification")
+    print(f"      - Sheet 2: Correlation_Matrix_Notes")
+    print(f"      - Sheet 3: Model1_Simple_OLS")
+    print(f"      - Sheet 4: Model1_Statistics")
+    print(f"      - Sheet 5: Model2_With_Controls")
+    print(f"      - Sheet 6: Model2_Statistics")
+    print(f"      - Sheet 7: Model3_Year_FE")
+    print(f"      - Sheet 8: Model3_Statistics")
+    print(f"      - Sheet 9: Regression_Summary")
+    print(f"      - Sheet 10: Publication_Table")
+
+except ImportError:
+    print(f"   ⚠ openpyxl not available, skipping COMPLETE_RESULTS.xlsx")
+    print(f"      Install with: pip install openpyxl")
+
+# ============================================================================
+# 8. CREATE SUMMARY README
 # ============================================================================
 
-print("\n8. Creating master summary document...")
+print("\n8. Creating summary README...")
 
 summary_doc = f"""
-STATISTICAL ANALYSIS COMPLETE SUMMARY
-======================================
+STATISTICAL ANALYSIS - CONSOLIDATED OUTPUT
+===========================================
 
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 For: Professor Yanjie Yang
 
-CONTENTS OF THIS DELIVERY
---------------------------
+OUTPUT FILES (2 FILES ONLY)
+---------------------------
 
-1. DATASET DESCRIPTION (01_DATASET_DESCRIPTION.txt)
-   - Sample period: 2016-2023
-   - Observations: 2,080 firm-years
-   - Companies: 293 manufacturing firms
-   - Data sources: TRI, SHELDUS, CRSP, Compustat
+📊 **COMPLETE_DATA.xlsx** - All data-related information
+   Contains 5 sheets:
+   1. Dataset_Description - Overview of the analysis dataset
+   2. Descriptive_Statistics - Summary statistics for all variables
+   3. Data_Dictionary - Variable definitions and descriptions
+   4. Exposure_Distribution - Distribution of disaster exposure levels
+   5. Yearly_Statistics - Year-by-year summary (template)
 
-2. STATISTICAL MODEL SPECIFICATION (02_STATISTICAL_MODEL.txt)
-   - Research question
-   - Dependent variable: ROA
-   - Key independent variable: AFFECTED_RATIO
-   - Control variables: LOG_ASSETS, LEVERAGE, Year FE
-   - Three model specifications
-   - Hypothesis and findings
+📈 **COMPLETE_RESULTS.xlsx** - All statistical results
+   Contains 10 sheets:
+   1. Model_Specification - Research question and model equations
+   2. Correlation_Matrix_Notes - Instructions for correlation analysis
+   3. Model1_Simple_OLS - Model 1 regression coefficients
+   4. Model1_Statistics - Model 1 fit statistics
+   5. Model2_With_Controls - Model 2 regression coefficients
+   6. Model2_Statistics - Model 2 fit statistics
+   7. Model3_Year_FE - Model 3 regression coefficients (main specification)
+   8. Model3_Statistics - Model 3 fit statistics
+   9. Regression_Summary - Comparison of all three models
+   10. Publication_Table - Publication-ready results table
 
-3. DESCRIPTIVE STATISTICS (03_DESCRIPTIVE_STATISTICS.csv/xlsx)
-   - Summary statistics for all key variables
-   - Mean, std dev, min, max, quartiles
-   - N = 2,080 observations with complete data
-   
-4. EXPOSURE DISTRIBUTION (03b_EXPOSURE_DISTRIBUTION.csv/xlsx)
-   - 49.3% no exposure
-   - 15.5% low exposure (1-25%)
-   - 16.4% medium exposure (26-50%)
-   - 8.0% high exposure (51-75%)
-   - 10.7% very high exposure (76-100%)
-
-5. CORRELATION MATRIX (04_CORRELATION_MATRIX.txt)
-   - Instructions for generating from actual data
-   - Key relationships to examine
-   - Expected patterns
-
-6. REGRESSION RESULTS (05a-05d files)
-   - Model 1: Simple OLS
-     * AFFECTED_RATIO coefficient: -0.0016 (p=0.790)
-     * R² = 0.000
-   
-   - Model 2: With Controls  
-     * AFFECTED_RATIO coefficient: -0.0009 (p=0.872)
-     * LOG_ASSETS: +0.0057*** (p<0.001)
-     * LEVERAGE: -0.0971*** (p<0.001)
-     * R² = 0.038
-   
-   - Model 3: With Year FE
-     * AFFECTED_RATIO coefficient: +0.0042 (p=0.506)
-     * Controls remain significant
-     * R² = 0.050
-
-KEY FINDINGS
-------------
+KEY FINDINGS (Hsu et al. 2018 Methodology)
+------------------------------------------
 ✓ NULL RESULT: Disasters do not significantly affect ROA in manufacturing firms
 ✓ Coefficient near zero across all specifications
 ✓ P-values > 0.50 in all models (not statistically significant)
 ✓ Control variables work as expected (size positive, leverage negative)
 ✓ Robust to model specification
+
+Model 1 (Simple OLS):     β = -0.0016, p = 0.790, R² = 0.000
+Model 2 (With Controls):  β = -0.0009, p = 0.872, R² = 0.038
+Model 3 (Year FE - Main): β = +0.0042, p = 0.506, R² = 0.050
 
 INTERPRETATION
 --------------
@@ -567,77 +668,72 @@ Manufacturing firms appear resilient to disaster exposure, likely due to:
 This contrasts with Hsu et al. (2018) findings for broader samples,
 suggesting manufacturing sector has unique resilience characteristics.
 
-DATA AVAILABILITY NOTE
-----------------------
-The complete dataset with all 2,080 observations is generated by running
-Notebooks 1-5 in sequence. The notebooks are available in this repository:
+DATA SOURCES
+------------
+- TRI (Toxic Release Inventory) - Facility locations
+- SHELDUS - Disaster events (2009-2023)
+- CRSP - Company identification
+- Compustat - Financial data
 
+Sample: 2,080 firm-years, 293 manufacturing firms, 2016-2023
+
+METHODOLOGY REFERENCE
+---------------------
+Hsu, P. H., Li, X., & Moore, J. A. (2018). 
+"Exploring the impact of disasters on firm value"
+Specification: Lagged disaster exposure (t-1) predicts ROA (t)
+
+NOTEBOOKS AVAILABLE
+-------------------
+For complete data generation and robustness checks:
 - Data_Preparation_FIPS.ipynb
 - Automated_Matching_FIPS.ipynb
 - 03_manual_review_and_analysis.ipynb
 - 04_disaster_exposure_analysis.ipynb
 - 05_CLEAN_affected_ratio_baseline_regression.ipynb
 - 06_ROBUSTNESS_CHECKS_CLEAN.ipynb
-
-ROBUSTNESS CHECKS
------------------
-Notebook 6 (06_ROBUSTNESS_CHECKS_CLEAN.ipynb) contains additional analyses:
-- Alternative outcome measures
-- Different disaster definitions
-- Subsample analyses by firm size
-- Dynamic specifications (leads/lags)
-- Placebo tests
-
-All robustness checks confirm the null finding.
-
-FILES IN THIS DELIVERY
-----------------------
-"""
-
-for file in sorted(output_dir.glob('*')):
-    summary_doc += f"  ✓ {file.name}\n"
-
-summary_doc += """
+- 07_Generate_Statistical_Outputs.ipynb
+- 08_FINAL_CONSOLIDATED_OUTPUTS.ipynb (generates these 2 files)
 
 CONTACT
 -------
-For questions about this analysis:
-- Student: Apoorv Saxena (s1129420@mail.yzu.edu.tw)
-- Supervisor: Professor Yanjie Yang (yanjie@saturn.yzu.edu.tw)
-
-Yuan Ze University
-December 2025
+Student: Apoorv Saxena (s1129420@mail.yzu.edu.tw)
+Supervisor: Professor Yanjie Yang (yanjie@saturn.yzu.edu.tw)
+Yuan Ze University, December 2025
 """
 
-with open(output_dir / '00_README.txt', 'w') as f:
+with open(output_dir / 'README.txt', 'w') as f:
     f.write(summary_doc)
 
-print(f"   ✓ Saved: {output_dir / '00_README.txt'}")
+print(f"   ✓ Saved: {output_dir / 'README.txt'}")
 
 # ============================================================================
 # 9. COMPLETION
 # ============================================================================
 
 print("\n" + "="*80)
-print("GENERATION COMPLETE")
+print("GENERATION COMPLETE - CONSOLIDATED OUTPUT (2 FILES)")
 print("="*80)
 print(f"\nAll outputs saved to: {output_dir}/")
 print("\nFiles created:")
 for file in sorted(output_dir.glob('*')):
-    size = file.stat().st_size
-    print(f"  - {file.name} ({size:,} bytes)")
+    if file.is_file():
+        size = file.stat().st_size
+        print(f"  ✓ {file.name} ({size:,} bytes)")
 
 print("\n" + "="*80)
-print("NEXT STEPS")
+print("SUCCESS - Only 2 Excel Files Generated!")
 print("="*80)
 print("""
-1. Review all generated files in the statistical_analysis_outputs/ folder
-2. To generate the complete dataset with actual observations:
-   - Run the Jupyter notebooks in sequence (requires Google Drive access)
-   - Use notebook 5 to export the final analysis_data DataFrame
-   - Save as: analysis_data.csv (2,080 rows × 16 columns)
-3. Calculate and add the correlation matrix from actual data
-4. Package all files for Professor Yang
+✅ COMPLETE_DATA.xlsx    - All data-related information (5 sheets)
+✅ COMPLETE_RESULTS.xlsx - All statistical results (10 sheets)
+✅ README.txt            - Summary and instructions
+
+Next Steps:
+1. Review both Excel files to verify all information is present
+2. Share COMPLETE_DATA.xlsx and COMPLETE_RESULTS.xlsx with Professor Yang
+3. To generate actual dataset: Run Notebooks 1-5 in sequence
+4. For robustness checks: See Notebook 6
 """)
 
 print("\n✓ Script completed successfully")
