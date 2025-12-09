@@ -400,6 +400,10 @@ print("\n7. Creating consolidated output files (2 files only)...")
 output_dir = Path('statistical_analysis_outputs')
 output_dir.mkdir(exist_ok=True)
 
+# Track file creation success
+files_created = []
+files_failed = []
+
 # ============================================================================
 # FILE 1: COMPLETE_DATA.xlsx - All data-related information
 # ============================================================================
@@ -475,9 +479,11 @@ try:
         exposure_df.to_excel(writer, sheet_name='Exposure_Distribution', index=False)
         
         # Sheet 5: Yearly Statistics (sample structure)
+        # Define years from dataset description
+        years_range = list(range(2016, 2024))  # 2016-2023
         yearly_stats_data = {
-            'Year': [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023],
-            'Note': ['Run notebooks to generate actual yearly statistics'] * 8
+            'Year': years_range,
+            'Note': ['Run notebooks to generate actual yearly statistics'] * len(years_range)
         }
         yearly_stats_df = pd.DataFrame(yearly_stats_data)
         yearly_stats_df.to_excel(writer, sheet_name='Yearly_Statistics', index=False)
@@ -488,10 +494,15 @@ try:
     print(f"      - Sheet 3: Data_Dictionary")
     print(f"      - Sheet 4: Exposure_Distribution")
     print(f"      - Sheet 5: Yearly_Statistics")
+    files_created.append('COMPLETE_DATA.xlsx')
 
-except ImportError:
-    print(f"   ⚠ openpyxl not available, skipping COMPLETE_DATA.xlsx")
+except ImportError as e:
+    print(f"   ✗ ERROR: openpyxl not available")
     print(f"      Install with: pip install openpyxl")
+    files_failed.append('COMPLETE_DATA.xlsx')
+except Exception as e:
+    print(f"   ✗ ERROR creating COMPLETE_DATA.xlsx: {e}")
+    files_failed.append('COMPLETE_DATA.xlsx')
 
 # ============================================================================
 # FILE 2: COMPLETE_RESULTS.xlsx - All statistical results
@@ -559,28 +570,45 @@ try:
         regression_summary_df.to_excel(writer, sheet_name='Regression_Summary', index=False)
         
         # Sheet 7: Publication-Ready Table
+        # Use dictionary-based lookup instead of hard-coded indices
         pub_table_data = []
         pub_table_data.append(['Variable', 'Model 1', 'Model 2', 'Model 3'])
+        
+        # Helper function to safely get coefficient by variable name
+        def get_coef(model_results, var_name, stat='Coefficient'):
+            """Safely retrieve coefficient by variable name"""
+            var_list = model_results.get('Variable', [])
+            if var_name in var_list:
+                idx = var_list.index(var_name)
+                return model_results[stat][idx]
+            return None
+        
+        # AFFECTED_RATIO row
         pub_table_data.append(['AFFECTED_RATIO', 
-                              f"{model1_results['Coefficient'][1]:.4f}",
-                              f"{model2_results['Coefficient'][1]:.4f}",
-                              f"{model3_results['Coefficient'][1]:.4f}"])
+                              f"{get_coef(model1_results, 'AFFECTED_RATIO'):.4f}",
+                              f"{get_coef(model2_results, 'AFFECTED_RATIO'):.4f}",
+                              f"{get_coef(model3_results, 'AFFECTED_RATIO'):.4f}"])
         pub_table_data.append(['', 
-                              f"({model1_results['Std Error'][1]:.4f})",
-                              f"({model2_results['Std Error'][1]:.4f})",
-                              f"({model3_results['Std Error'][1]:.4f})"])
+                              f"({get_coef(model1_results, 'AFFECTED_RATIO', 'Std Error'):.4f})",
+                              f"({get_coef(model2_results, 'AFFECTED_RATIO', 'Std Error'):.4f})",
+                              f"({get_coef(model3_results, 'AFFECTED_RATIO', 'Std Error'):.4f})"])
+        
+        # LOG_ASSETS row (only in models 2 and 3)
         pub_table_data.append(['LOG_ASSETS', '', 
-                              f"{model2_results['Coefficient'][2]:.4f}",
-                              f"{model3_results['Coefficient'][2]:.4f}"])
+                              f"{get_coef(model2_results, 'LOG_ASSETS'):.4f}",
+                              f"{get_coef(model3_results, 'LOG_ASSETS'):.4f}"])
         pub_table_data.append(['', '', 
-                              f"({model2_results['Std Error'][2]:.4f})",
-                              f"({model3_results['Std Error'][2]:.4f})"])
+                              f"({get_coef(model2_results, 'LOG_ASSETS', 'Std Error'):.4f})",
+                              f"({get_coef(model3_results, 'LOG_ASSETS', 'Std Error'):.4f})"])
+        
+        # LEVERAGE row (only in models 2 and 3)
         pub_table_data.append(['LEVERAGE', '', 
-                              f"{model2_results['Coefficient'][3]:.4f}",
-                              f"{model3_results['Coefficient'][3]:.4f}"])
+                              f"{get_coef(model2_results, 'LEVERAGE'):.4f}",
+                              f"{get_coef(model3_results, 'LEVERAGE'):.4f}"])
         pub_table_data.append(['', '', 
-                              f"({model2_results['Std Error'][3]:.4f})",
-                              f"({model3_results['Std Error'][3]:.4f})"])
+                              f"({get_coef(model2_results, 'LEVERAGE', 'Std Error'):.4f})",
+                              f"({get_coef(model3_results, 'LEVERAGE', 'Std Error'):.4f})"])
+        
         pub_table_data.append(['', '', '', ''])
         pub_table_data.append(['Year Fixed Effects', 'No', 'No', 'Yes'])
         pub_table_data.append(['N', model1_stats['N'], model2_stats['N'], model3_stats['N']])
@@ -603,10 +631,15 @@ try:
     print(f"      - Sheet 8: Model3_Statistics")
     print(f"      - Sheet 9: Regression_Summary")
     print(f"      - Sheet 10: Publication_Table")
+    files_created.append('COMPLETE_RESULTS.xlsx')
 
-except ImportError:
-    print(f"   ⚠ openpyxl not available, skipping COMPLETE_RESULTS.xlsx")
+except ImportError as e:
+    print(f"   ✗ ERROR: openpyxl not available")
     print(f"      Install with: pip install openpyxl")
+    files_failed.append('COMPLETE_RESULTS.xlsx')
+except Exception as e:
+    print(f"   ✗ ERROR creating COMPLETE_RESULTS.xlsx: {e}")
+    files_failed.append('COMPLETE_RESULTS.xlsx')
 
 # ============================================================================
 # 8. CREATE SUMMARY README
@@ -706,6 +739,7 @@ with open(output_dir / 'README.txt', 'w') as f:
     f.write(summary_doc)
 
 print(f"   ✓ Saved: {output_dir / 'README.txt'}")
+files_created.append('README.txt')
 
 # ============================================================================
 # 9. COMPLETION
@@ -715,16 +749,28 @@ print("\n" + "="*80)
 print("GENERATION COMPLETE - CONSOLIDATED OUTPUT (2 FILES)")
 print("="*80)
 print(f"\nAll outputs saved to: {output_dir}/")
-print("\nFiles created:")
-for file in sorted(output_dir.glob('*')):
-    if file.is_file():
-        size = file.stat().st_size
-        print(f"  ✓ {file.name} ({size:,} bytes)")
+
+# Show status of file creation
+if files_created:
+    print("\nFiles successfully created:")
+    for file_name in files_created:
+        file_path = output_dir / file_name
+        if file_path.is_file():
+            size = file_path.stat().st_size
+            print(f"  ✓ {file_name} ({size:,} bytes)")
+        else:
+            print(f"  ✓ {file_name}")
+
+if files_failed:
+    print("\n⚠️  Files that could not be created:")
+    for file_name in files_failed:
+        print(f"  ✗ {file_name}")
 
 print("\n" + "="*80)
-print("SUCCESS - Only 2 Excel Files Generated!")
-print("="*80)
-print("""
+if len(files_failed) == 0:
+    print("✅ SUCCESS - All Files Generated!")
+    print("="*80)
+    print("""
 ✅ COMPLETE_DATA.xlsx    - All data-related information (5 sheets)
 ✅ COMPLETE_RESULTS.xlsx - All statistical results (10 sheets)
 ✅ README.txt            - Summary and instructions
@@ -735,5 +781,14 @@ Next Steps:
 3. To generate actual dataset: Run Notebooks 1-5 in sequence
 4. For robustness checks: See Notebook 6
 """)
+else:
+    print("⚠️  PARTIAL SUCCESS - Some Files Could Not Be Created")
+    print("="*80)
+    print(f"\nSuccessfully created {len(files_created)} of {len(files_created) + len(files_failed)} files")
+    print("\nPlease install missing dependencies:")
+    print("  pip install openpyxl pandas numpy")
+    print("")
+    sys.exit(1)  # Exit with error code
 
 print("\n✓ Script completed successfully")
+sys.exit(0)  # Exit with success code
