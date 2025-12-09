@@ -479,8 +479,10 @@ try:
         exposure_df.to_excel(writer, sheet_name='Exposure_Distribution', index=False)
         
         # Sheet 5: Yearly Statistics (sample structure)
-        # Define years from dataset description
-        years_range = list(range(2016, 2024))  # 2016-2023
+        # Extract years from dataset description to avoid hard-coding
+        sample_period = dataset_description['Sample Period']  # e.g., '2016-2023'
+        start_year, end_year = map(int, sample_period.split('-'))
+        years_range = list(range(start_year, end_year + 1))
         yearly_stats_data = {
             'Year': years_range,
             'Note': ['Run notebooks to generate actual yearly statistics'] * len(years_range)
@@ -576,12 +578,16 @@ try:
         
         # Helper function to safely get coefficient by variable name
         def get_coef(model_results, var_name, stat='Coefficient'):
-            """Safely retrieve coefficient by variable name"""
+            """Safely retrieve coefficient by variable name, returns 0.0 if not found"""
             var_list = model_results.get('Variable', [])
             if var_name in var_list:
                 idx = var_list.index(var_name)
-                return model_results[stat][idx]
-            return None
+                value = model_results[stat][idx]
+                # Return 0.0 if value is None or NaN
+                if value is None or (isinstance(value, float) and np.isnan(value)):
+                    return 0.0
+                return value
+            return 0.0  # Return 0.0 instead of None for safe formatting
         
         # AFFECTED_RATIO row
         pub_table_data.append(['AFFECTED_RATIO', 
