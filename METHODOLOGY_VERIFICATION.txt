@@ -1,0 +1,299 @@
+================================================================================
+METHODOLOGY VERIFICATION CHECKLIST
+Hsu et al. (2018) "Natural Disasters, Technology Diversity, and Operating Performance"
+================================================================================
+
+Generated: December 9, 2025
+Purpose: Line-by-line verification that implementation matches original paper
+
+================================================================================
+SECTION 1: HSU ET AL. (2018) EQUATION (2) - PAGE 6
+================================================================================
+
+ORIGINAL EQUATION:
+    ROA_i,t = β₀ + β₁·HIT_RATIO_i,t-1 + Xβ_i,t + μ_t + η_i + ε_it
+
+COMPONENT BREAKDOWN:
+
+┌─────────────────┬─────────────────────────────────────┬─────────────────────┐
+│ Component       │ Hsu et al. Definition               │ Current Status      │
+├─────────────────┼─────────────────────────────────────┼─────────────────────┤
+│ ROA_i,t         │ Operating Income Before Deprec.     │ ❌ WRONG            │
+│                 │ divided by lagged Total Assets      │ Using NI/AT         │
+│                 │ = OIBDP_t / AT_{t-1}                │ Should be OIBDP/lag │
+├─────────────────┼─────────────────────────────────────┼─────────────────────┤
+│ HIT_RATIO_i,t-1 │ % facilities in affected STATES     │ ❌ WRONG            │
+│                 │ LAGGED by 1 year                    │ Using contemporaneous│
+│                 │                                     │ Not lagged          │
+├─────────────────┼─────────────────────────────────────┼─────────────────────┤
+│ Xβ_i,t          │ Control variables (contemporaneous) │ ✅ CORRECT          │
+│                 │ LOG_ASSETS, LEVERAGE, etc.          │ Controls included   │
+├─────────────────┼─────────────────────────────────────┼─────────────────────┤
+│ μ_t             │ Year fixed effects                  │ ✅ CORRECT          │
+│                 │                                     │ C(YEAR) included    │
+├─────────────────┼─────────────────────────────────────┼─────────────────────┤
+│ η_i             │ Firm fixed effects                  │ ❌ MISSING          │
+│                 │                                     │ Not implemented     │
+├─────────────────┼─────────────────────────────────────┼─────────────────────┤
+│ ε_it            │ Error term                          │ ⚠️ PARTIAL          │
+│                 │ Clustered at STATE level            │ Not clustered       │
+└─────────────────┴─────────────────────────────────────┴─────────────────────┘
+
+================================================================================
+SECTION 2: VARIABLE DEFINITIONS
+================================================================================
+
+DEPENDENT VARIABLE: ROA
+
+Hsu et al. Definition (Page 5):
+    "ROA is the return on assets, defined as operating income before
+    depreciation divided by total assets in the previous year."
+
+    ROA = OIBDP_t / AT_{t-1}
+
+    Where:
+    - OIBDP = Operating Income Before Depreciation (Compustat item 'oibdp')
+    - AT = Total Assets (Compustat item 'at')
+    - Denominator is LAGGED (t-1)
+
+Current Implementation (Notebook 5, Cell 6):
+    analysis_data['ROA'] = analysis_data['NET_INCOME'] / analysis_data['TOTAL_ASSETS']
+
+Problems:
+    1. Using NET_INCOME instead of OIBDP
+    2. Using contemporaneous TOTAL_ASSETS instead of lagged
+
+Numerical Impact:
+    Hsu et al. mean ROA: 0.16 (16%)
+    Current mean ROA:    0.055 (5.5%)
+
+    This ~3x difference is because:
+    - OIBDP > Net Income (no depreciation, interest, taxes)
+    - Using lagged assets in denominator (assets grow over time)
+
+CORRECTION:
+    data['AT_lag1'] = data.groupby('PERMNO')['TOTAL_ASSETS'].shift(1)
+    data['ROA'] = data['OIBDP'] / data['AT_lag1']
+
+--------------------------------------------------------------------------------
+
+INDEPENDENT VARIABLE: HIT_RATIO (AFFECTED_RATIO)
+
+Hsu et al. Definition (Page 5):
+    "HIT_RATIO is the fraction of factories located in states hit by
+    natural disasters in year t-1."
+
+    HIT_RATIO = # factories in affected STATES / Total factories
+    Timing: LAGGED by 1 year (t-1)
+    Geography: STATE level matching
+
+Current Implementation (Notebook 5, Cell 4):
+    company_year['AFFECTED_RATIO'] = exposed_facilities / total_facilities
+    # Used contemporaneously in regression
+
+Problems:
+    1. Using COUNTY level instead of STATE level matching
+    2. NOT LAGGED - using same-year disasters
+
+CORRECTION:
+    data['AFFECTED_RATIO_lag1'] = data.groupby('PERMNO')['AFFECTED_RATIO'].shift(1)
+
+    # In regression:
+    model = smf.ols('ROA ~ AFFECTED_RATIO_lag1 + ...', data=data)
+
+--------------------------------------------------------------------------------
+
+CONTROL VARIABLES:
+
+Hsu et al. Control Variables (Table 2):
+    - SIZE: Log of book assets
+    - MTB: Market-to-book ratio
+    - LEVERAGE: Book debt / Book assets
+    - CASH_HOLDINGS: Cash / Total assets
+    - R&D_INTENSITY: R&D expense / Total assets
+    - AGE: Firm age
+    - PP&E: Property, plant & equipment / Total assets
+    - DIV_YIELD: Dividends / Market value
+    - STOCK_RETURN: Prior year stock return
+    - TECH_DIVERSITY: Patent technology diversity
+
+Current Control Variables (Notebook 5, Cell 6):
+    - LOG_ASSETS ✅
+    - LEVERAGE ✅
+    - (Others not included)
+
+Assessment: Partial match. Core controls present, but missing some Hsu et al. controls.
+
+================================================================================
+SECTION 3: SAMPLE CONSTRUCTION
+================================================================================
+
+Hsu et al. Sample:
+    Period: 1987-2014 (28 years)
+    N: 16,709 firm-year observations
+    Companies: Manufacturing firms (SIC 2000-3999)
+    Data Sources: TRI, Compustat, CRSP, Barrot & Sauvagnat (2015) disasters
+
+Current Sample:
+    Period: 2016-2023 (8 years)
+    N: 2,080 firm-year observations
+    Companies: Manufacturing firms matched to CRSP
+    Data Sources: TRI, Compustat, CRSP, SHELDUS disasters
+
+DIFFERENCES:
+    1. Time period: 1987-2014 vs 2016-2023 (no overlap!)
+    2. Sample size: 16,709 vs 2,080 (8x smaller)
+    3. Disaster source: Barrot & Sauvagnat vs SHELDUS
+    4. Disaster severity: Major only vs all disasters
+
+================================================================================
+SECTION 4: ESTIMATION METHOD
+================================================================================
+
+Hsu et al. Estimation:
+    - Two-way fixed effects (firm + year)
+    - Standard errors clustered at STATE level
+    - Panel data regression
+
+Current Estimation (Notebook 5):
+    Model 1: OLS without fixed effects
+    Model 2: OLS with controls
+    Model 3: OLS with year fixed effects (C(YEAR))
+
+    NO firm fixed effects
+    NO clustered standard errors
+
+CORRECTION NEEDED:
+    Use PanelOLS from linearmodels:
+
+    from linearmodels import PanelOLS
+
+    data = data.set_index(['PERMNO', 'YEAR'])
+    model = PanelOLS.from_formula(
+        'ROA ~ AFFECTED_RATIO_lag1 + LOG_ASSETS + LEVERAGE + TimeEffects',
+        data=data,
+        entity_effects=True,  # Firm FE
+        time_effects=True     # Year FE
+    ).fit(cov_type='clustered', cluster_entity=True)
+
+================================================================================
+SECTION 5: EXPECTED RESULTS
+================================================================================
+
+Hsu et al. Table 3 Results (All Firms):
+    Coefficient on HIT_RATIO: -0.012
+    Standard Error: 0.004
+    Significance: *** (1% level)
+    Interpretation: 100% exposure → 1.2% ROA decline
+
+Current Results (Notebook 5):
+    Model 1: β = -0.0016, p = 0.790
+    Model 2: β = -0.0009, p = 0.872
+    Model 3: β = +0.0042, p = 0.506
+
+DISCREPANCY:
+    Hsu et al.: NEGATIVE and SIGNIFICANT (-0.012***)
+    Current:    NEAR-ZERO and NOT SIGNIFICANT (+0.004)
+
+    Direction is OPPOSITE in Model 3!
+
+ROOT CAUSE:
+    Primary: Using contemporaneous instead of lagged exposure
+    Secondary: Wrong ROA definition
+    Tertiary: Missing firm fixed effects
+
+================================================================================
+SECTION 6: VERIFICATION CHECKLIST
+================================================================================
+
+Before Running Regressions, Verify:
+
+[ ] 1. AFFECTED_RATIO is LAGGED by 1 year
+      Code: data['AFFECTED_RATIO_lag1'] = data.groupby('PERMNO')['AFFECTED_RATIO'].shift(1)
+      Check: 2016 observations should have NaN (no prior year)
+      Check: 2017's lag should equal 2016's contemporaneous value
+
+[ ] 2. ROA uses OIBDP in numerator
+      Source: Compustat variable 'oibdp'
+      If unavailable: Document approximation with Net Income
+
+[ ] 3. ROA uses LAGGED assets in denominator
+      Code: data['AT_lag1'] = data.groupby('PERMNO')['TOTAL_ASSETS'].shift(1)
+      Code: data['ROA'] = data['OIBDP'] / data['AT_lag1']
+
+[ ] 4. Firm fixed effects are included
+      Method: Use PanelOLS with entity_effects=True
+      Alternative: Include C(PERMNO) dummies
+
+[ ] 5. Year fixed effects are included
+      Method: Use PanelOLS with time_effects=True
+      Alternative: Include C(YEAR) dummies
+
+[ ] 6. Standard errors are clustered
+      Level: STATE (Hsu et al.) or FIRM (acceptable alternative)
+      Code: .fit(cov_type='clustered', cluster_entity=True)
+
+[ ] 7. Sample verification
+      Print: First 10 rows of one company showing lag is correct
+      Print: ROA mean should be ~0.10-0.20 if using OIBDP
+      Print: AFFECTED_RATIO_lag1 mean
+
+================================================================================
+SECTION 7: SAMPLE VERIFICATION CODE
+================================================================================
+
+# Verification code to run after creating lagged variables:
+
+print("="*80)
+print("VERIFICATION: LAGGING IS CORRECT")
+print("="*80)
+
+# Show one company's time series
+sample = data[data['PERMNO'] == data['PERMNO'].iloc[0]]
+print(sample[['PERMNO', 'YEAR', 'AFFECTED_RATIO', 'AFFECTED_RATIO_lag1']].to_string())
+
+print("\nExpected pattern:")
+print("  2016: AFFECTED_RATIO_lag1 should be NaN (no prior year)")
+print("  2017: AFFECTED_RATIO_lag1 should equal 2016's AFFECTED_RATIO")
+print("  2018: AFFECTED_RATIO_lag1 should equal 2017's AFFECTED_RATIO")
+print("  etc.")
+
+# Verify correlation
+lag_corr = data[['AFFECTED_RATIO', 'AFFECTED_RATIO_lag1']].corr().iloc[0,1]
+print(f"\nCorrelation between AFFECTED_RATIO and lag: {lag_corr:.4f}")
+print("  (Should be positive but not 1.0)")
+
+# Verify ROA distribution
+print(f"\nROA statistics:")
+print(f"  Mean:   {data['ROA'].mean():.4f}")
+print(f"  Median: {data['ROA'].median():.4f}")
+print(f"  Std:    {data['ROA'].std():.4f}")
+print(f"  (Hsu et al. mean: 0.16)")
+
+================================================================================
+SECTION 8: FINAL RECOMMENDATION
+================================================================================
+
+CONCLUSION: The current implementation has CRITICAL methodology errors that
+explain the opposite-sign results compared to Hsu et al. (2018).
+
+REQUIRED FIXES (in order of importance):
+1. LAG AFFECTED_RATIO by 1 year
+2. Use OIBDP instead of Net Income for ROA numerator
+3. Use LAGGED total assets for ROA denominator
+4. Add firm fixed effects
+5. Cluster standard errors at state level
+
+EXPECTED OUTCOME AFTER FIXES:
+- Coefficient should become more negative (closer to Hsu et al.)
+- May still differ due to different time period and sample
+- Modern firms (2016-2023) may genuinely be more resilient
+
+IF RESULTS STILL DIFFER:
+- Document as legitimate finding about changed firm resilience
+- Discuss potential reasons (insurance, diversification, technology)
+- Consider robustness checks with major disasters only
+
+================================================================================
+END OF VERIFICATION DOCUMENT
+================================================================================
