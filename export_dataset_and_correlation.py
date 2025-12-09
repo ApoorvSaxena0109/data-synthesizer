@@ -1,7 +1,23 @@
 #!/usr/bin/env python3
 """
-Data Export Script for Statistical Analysis
-============================================
+⚠️ DEPRECATION NOTICE
+=====================
+This script has been superseded by the consolidated output approach.
+
+Please use instead:
+- generate_statistical_outputs.py (for 2-file consolidated output)
+- 08_FINAL_CONSOLIDATED_OUTPUTS.ipynb (same 2-file output in notebook format)
+
+These create only 2 files:
+- COMPLETE_DATA.xlsx (all data in 5 sheets)
+- COMPLETE_RESULTS.xlsx (all results in 10 sheets)
+
+This file is kept for reference but is no longer actively maintained.
+
+---
+
+Data Export Script for Statistical Analysis (LEGACY)
+====================================================
 This script should be run AFTER Notebook 5 has been executed.
 It exports the complete analysis dataset and correlation matrix.
 
