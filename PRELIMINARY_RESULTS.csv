@@ -1,0 +1,5 @@
+Model,AFFECTED_RATIO_lag1,SE,GEO_DIVERSIFICATION,INTERACTION,R²,N,Year FE,Firm FE,Clustered SE
+(1) Baseline,0.0020,(0.0076),-,-,0.0630,1660,Yes,No,Yes
+(2) + Diversification,0.0045,(0.0078),0.0102,-,0.0644,1660,Yes,No,Yes
+(3) + Interaction,-0.0022,(0.0108),0.0042,0.0248,0.0649,1660,Yes,No,Yes
+(4) + Firm FE,-0.0040,(0.0134),(absorbed),0.0333,0.2765,1660,Yes,Yes,Yes

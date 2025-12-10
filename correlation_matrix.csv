@@ -1,0 +1,6 @@
+,roa,affected_ratio_lag1,geo_diversification,log_assets,leverage
+roa,1.0,0.001,0.04,0.159,-0.121
+affected_ratio_lag1,0.001,1.0,-0.221,-0.03,0.012
+geo_diversification,0.04,-0.221,1.0,0.037,0.011
+log_assets,0.159,-0.03,0.037,1.0,0.0
+leverage,-0.121,0.012,0.011,0.0,1.0
